@@ -128,7 +128,12 @@ export class ToonReporter implements Reporter {
         failure.got = got
       } else if (error) {
         // Non-assertion error (TypeError, etc.)
-        failure.error = error.message || String(error)
+        let message = error.message || String(error)
+        // Timeout errors have multi-line messages with hints - take first line only
+        if (message.startsWith('Test timed out')) {
+          message = message.split('\n')[0]
+        }
+        failure.error = message
       }
 
       return failure

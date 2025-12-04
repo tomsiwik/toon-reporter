@@ -1,0 +1,11 @@
+[32mpassing: 8[0m
+[31mfailing[1]:[0m
+  - at: [33m./some-failing.test.ts:8:17[0m
+    expected: "7"
+    got: "6"
+[90mskipped[1]:[0m
+[90m  - at: ./with-skipped.test.ts:7:6[0m
+[90m    name: 3 + 3 = 6[0m
+[36mtodo[1]:[0m
+  - at: [33m./with-skipped.test.ts:11:6[0m
+    name: implement this later
