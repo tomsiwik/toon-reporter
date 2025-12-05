@@ -38,7 +38,7 @@ describe('ToonReporter', () => {
 
       expect(stdout).toContain('passing: 1')
       expect(stdout).toContain('failing[1]:')
-      expect(stdout).toContain('at: ./some-failing.test.ts:8:17')
+      expect(stdout).toContain('at: some-failing.test.ts:8:17')
       expect(stdout).toContain('expected: "7"')
       expect(stdout).toContain('got: "6"')
     })
@@ -50,8 +50,8 @@ describe('ToonReporter', () => {
         include: ['some-failing.test.ts'],
       })
 
-      // Should be relative path starting with ./
-      expect(stdout).toMatch(/at: \.\/.*:\d+:\d+/)
+      // Should be relative path (without ./ prefix)
+      expect(stdout).toMatch(/at: [\w-]+\.test\.ts:\d+:\d+/)
     })
   })
 

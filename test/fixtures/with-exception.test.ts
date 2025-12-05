@@ -15,5 +15,5 @@ test('throws custom error', () => {
 
 test('throws ReferenceError', () => {
   // @ts-expect-error intentional undefined variable
-  undefinedVariable.doSomething()
+  nonExistent.doSomething()
 })

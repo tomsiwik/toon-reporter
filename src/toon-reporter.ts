@@ -16,15 +16,45 @@ const colors = {
   reset: '\x1b[0m',
 }
 
-export interface ToonFailure {
-  at: string
+// OSC 8 hyperlink helpers
+function link(url: string, text: string): string {
+  return `\x1b]8;;${url}\x1b\\${text}\x1b]8;;\x1b\\`
+}
+
+function fileLink(filePath: string, line?: number, column?: number): string {
+  // file:// URL with line/column for editor integration
+  let url = `file://${filePath}`
+  if (line) {
+    url += `:${line}`
+    if (column) {
+      url += `:${column}`
+    }
+  }
+  return url
+}
+
+export interface ToonFailureAssertion {
   expected?: string
   got?: string
   error?: string
 }
 
+export interface ToonFailure {
+  at: string
+  absPath: string
+  line?: number
+  column?: number
+  expected?: string
+  got?: string
+  error?: string
+  each?: boolean
+}
+
 export interface ToonSkipped {
   at: string
+  absPath: string
+  line?: number
+  column?: number
   name: string
 }
 
@@ -59,7 +89,7 @@ export class ToonReporter implements Reporter {
     this.start = Date.now()
   }
 
-  private parseLocation(error: any, rootDir: string): string | null {
+  private parseLocation(error: any, rootDir: string): { absPath: string; relPath: string; line: number; column: number } | null {
     const stack = error?.stack || ''
     // Match file:line:column pattern in stack trace - find first line with actual file path
     const lines = stack.split('\n')
@@ -72,10 +102,14 @@ export class ToonReporter implements Reporter {
         if (filePath.includes('node_modules') || filePath.startsWith('file:')) {
           continue
         }
-        const relativePath = filePath.startsWith(rootDir)
-          ? './' + relative(rootDir, filePath)
-          : filePath
-        return `${relativePath}:${lineNum}:${column}`
+        const absPath = filePath.startsWith(rootDir) ? filePath : resolve(rootDir, filePath)
+        const relPath = relative(rootDir, absPath)
+        return {
+          absPath,
+          relPath,
+          line: parseInt(lineNum, 10),
+          column: parseInt(column, 10),
+        }
       }
     }
     return null
@@ -116,11 +150,21 @@ export class ToonReporter implements Reporter {
     // Build failures array
     const failures: ToonFailure[] = failedTests.map((t) => {
       const error = t.result?.errors?.[0]
-      const location = this.parseLocation(error, rootDir)
+      const parsed = this.parseLocation(error, rootDir)
       const { expected, got } = this.parseExpectedGot(error)
 
+      // Use parsed location from stack trace, or fall back to test location
+      const absPath = parsed?.absPath || t.file.filepath
+      const relPath = parsed?.relPath || relative(rootDir, t.file.filepath)
+      const line = parsed?.line || t.location?.line
+      const column = parsed?.column || t.location?.column
+
       const failure: ToonFailure = {
-        at: location || `./${relative(rootDir, t.file.filepath)}:${t.location?.line || 0}:${t.location?.column || 0}`,
+        at: line ? `${relPath}:${line}:${column || 0}` : relPath,
+        absPath,
+        line,
+        column,
+        each: t.each,
       }
 
       if (expected !== undefined && got !== undefined) {
@@ -133,6 +177,11 @@ export class ToonReporter implements Reporter {
         if (message.startsWith('Test timed out')) {
           message = message.split('\n')[0]
         }
+        // Prefix with error type if it's a specific error (not generic Error)
+        const errorName = error.name
+        if (errorName && errorName !== 'Error' && !message.startsWith(errorName)) {
+          message = `${errorName}: ${message}`
+        }
         failure.error = message
       }
 
@@ -141,16 +190,30 @@ export class ToonReporter implements Reporter {
 
     // Build skipped array (line:column requires --includeTaskLocation flag)
     const skipped: ToonSkipped[] = skippedTests.map((t) => {
-      const filePath = `./${relative(rootDir, t.file.filepath)}`
-      const location = t.location ? `:${t.location.line}:${t.location.column}` : ''
-      return { at: `${filePath}${location}`, name: t.name }
+      const relPath = relative(rootDir, t.file.filepath)
+      const line = t.location?.line
+      const column = t.location?.column
+      return {
+        at: line ? `${relPath}:${line}:${column || 0}` : relPath,
+        absPath: t.file.filepath,
+        line,
+        column,
+        name: t.name,
+      }
     })
 
     // Build todo array (line:column requires --includeTaskLocation flag)
     const todo: ToonSkipped[] = todoTests.map((t) => {
-      const filePath = `./${relative(rootDir, t.file.filepath)}`
-      const location = t.location ? `:${t.location.line}:${t.location.column}` : ''
-      return { at: `${filePath}${location}`, name: t.name }
+      const relPath = relative(rootDir, t.file.filepath)
+      const line = t.location?.line
+      const column = t.location?.column
+      return {
+        at: line ? `${relPath}:${line}:${column || 0}` : relPath,
+        absPath: t.file.filepath,
+        line,
+        column,
+        name: t.name,
+      }
     })
 
     const output = this.formatOutput(passedCount, failures, skipped, todo)
@@ -161,14 +224,41 @@ export class ToonReporter implements Reporter {
     const useColor = this.options.color && !this.options.outputFile && !this.options._captureOutput && !process.env.NO_COLOR && !process.env.CI
     const { green, red, yellow, cyan, gray, reset } = useColor ? colors : { green: '', red: '', yellow: '', cyan: '', gray: '', reset: '' }
 
+    // Helper to format a file location with optional hyperlink
+    const formatLocation = (at: string, absPath: string, line?: number, column?: number, color: string = yellow): string => {
+      if (useColor) {
+        const url = fileLink(absPath, line, column)
+        return `${color}${link(url, at)}${reset}`
+      }
+      return at
+    }
+
     const lines: string[] = []
 
     lines.push(`${green}passing: ${passing}${reset}`)
 
     if (failures.length > 0) {
       lines.push(`${red}failing[${failures.length}]:${reset}`)
+
+      // Group parameterized (.each) failures by location
+      const grouped = new Map<string, ToonFailure[]>()
+      const regular: ToonFailure[] = []
+
       for (const failure of failures) {
-        lines.push(`  - at: ${yellow}${failure.at}${reset}`)
+        if (failure.each) {
+          const key = failure.at
+          if (!grouped.has(key)) {
+            grouped.set(key, [])
+          }
+          grouped.get(key)!.push(failure)
+        } else {
+          regular.push(failure)
+        }
+      }
+
+      // Output regular failures
+      for (const failure of regular) {
+        lines.push(`  - at: ${formatLocation(failure.at, failure.absPath, failure.line, failure.column)}`)
         if (failure.expected !== undefined && failure.got !== undefined) {
           lines.push(`    expected: ${JSON.stringify(failure.expected)}`)
           lines.push(`    got: ${JSON.stringify(failure.got)}`)
@@ -176,21 +266,36 @@ export class ToonReporter implements Reporter {
           lines.push(`    error: ${failure.error}`)
         }
       }
-    }
 
-    if (skipped.length > 0) {
-      lines.push(`${gray}skipped[${skipped.length}]:${reset}`)
-      for (const s of skipped) {
-        lines.push(`${gray}  - at: ${s.at}${reset}`)
-        lines.push(`${gray}    name: ${s.name}${reset}`)
+      // Output grouped parameterized failures
+      for (const [, groupedFailures] of grouped) {
+        const first = groupedFailures[0]
+        lines.push(`  - at: ${formatLocation(first.at, first.absPath, first.line, first.column)}`)
+        lines.push(`    parameters[${groupedFailures.length}]:`)
+        for (const failure of groupedFailures) {
+          if (failure.expected !== undefined && failure.got !== undefined) {
+            lines.push(`      - expected: ${JSON.stringify(failure.expected)}`)
+            lines.push(`        got: ${JSON.stringify(failure.got)}`)
+          } else if (failure.error) {
+            lines.push(`      - error: ${failure.error}`)
+          }
+        }
       }
     }
 
     if (todo.length > 0) {
       lines.push(`${cyan}todo[${todo.length}]:${reset}`)
       for (const t of todo) {
-        lines.push(`  - at: ${yellow}${t.at}${reset}`)
+        lines.push(`  - at: ${formatLocation(t.at, t.absPath, t.line, t.column)}`)
         lines.push(`    name: ${t.name}`)
+      }
+    }
+
+    if (skipped.length > 0) {
+      lines.push(`${gray}skipped[${skipped.length}]:${reset}`)
+      for (const s of skipped) {
+        lines.push(`${gray}  - at: ${formatLocation(s.at, s.absPath, s.line, s.column, gray)}${reset}`)
+        lines.push(`${gray}    name: ${s.name}${reset}`)
       }
     }
 
