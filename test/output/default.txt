@@ -1,14 +1,31 @@
 
 [1m[46m RUN [49m[22m [36mv4.0.15 [39m[90m/Users/tom/Code/tomsiwik/toon-reporter/test/fixtures[39m
 
- [32m✓[39m all-passing.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 1[2mms[22m[39m
  [32m✓[39m with-skipped.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 1[2mms[22m[39m
- [32m✓[39m with-suites.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m all-passing.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m with-suites.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [31m❯[39m with-exception.test.ts [2m([22m[2m4 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 3[2mms[22m[39m
+   [32m✓[39m normal test passes[32m 1[2mms[22m[39m
+[31m   [31m×[31m throws TypeError[39m[32m 1[2mms[22m[39m
+[31m   [31m×[31m throws custom error[39m[32m 0[2mms[22m[39m
+[31m   [31m×[31m throws ReferenceError[39m[32m 0[2mms[22m[39m
  [31m❯[39m some-failing.test.ts [2m([22m[2m2 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 4[2mms[22m[39m
    [32m✓[39m 1 + 1 = 2[32m 1[2mms[22m[39m
 [31m   [31m×[31m 3 + 3 = 7[39m[32m 3[2mms[22m[39m
+ [31m❯[39m with-each.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 5[2mms[22m[39m
+   [32m✓[39m add(1, 1) = 2[32m 1[2mms[22m[39m
+   [32m✓[39m add(2, 2) = 4[32m 0[2mms[22m[39m
+   [32m✓[39m add(3, 3) = 6[32m 0[2mms[22m[39m
+[31m   [31m×[31m divide(2, 1) = 1[39m[32m 3[2mms[22m[39m
+   [32m✓[39m divide(4, 2) = 2[32m 0[2mms[22m[39m
+[31m   [31m×[31m divide(6, 3) = 4[39m[32m 0[2mms[22m[39m
+   [32m✓[39m 'Alice' is 30 years old[32m 0[2mms[22m[39m
+   [32m✓[39m 'Bob' is 25 years old[32m 0[2mms[22m[39m
+ [31m❯[39m with-timeout.test.ts [2m([22m[2m2 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 104[2mms[22m[39m
+   [32m✓[39m fast test passes[32m 1[2mms[22m[39m
+[31m   [31m×[31m slow test times out[39m[32m 103[2mms[22m[39m
 
-[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 7 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
 
 [41m[1m FAIL [22m[49m some-failing.test.ts[2m > [22m3 + 3 = 7
 [31m[1mAssertionError[22m: expected 6 to be 7 // Object.is equality[39m
@@ -27,11 +44,98 @@
     [90m  9| [39m})
     [90m 10| [39m
 
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m with-each.test.ts[2m > [22mdivide(2, 1) = 1
+[31m[1mAssertionError[22m: expected 2 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m with-each.test.ts:[2m16:17[22m[39m
+    [90m 14| [39m  [[34m6[39m[33m,[39m [34m3[39m[33m,[39m [34m4[39m][33m,[39m [90m// wrong: 6/3 = 2, not 4[39m
+    [90m 15| [39m])([32m'divide(%i, %i) = %i'[39m[33m,[39m (a[33m,[39m b[33m,[39m expected) [33m=>[39m {
+    [90m 16| [39m  [34mexpect[39m(a [33m/[39m b)[33m.[39m[34mtoBe[39m(expected)
+    [90m   | [39m                [31m^[39m
+    [90m 17| [39m})
+    [90m 18| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m with-each.test.ts[2m > [22mdivide(6, 3) = 4
+[31m[1mAssertionError[22m: expected 2 to be 4 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 4[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m with-each.test.ts:[2m16:17[22m[39m
+    [90m 14| [39m  [[34m6[39m[33m,[39m [34m3[39m[33m,[39m [34m4[39m][33m,[39m [90m// wrong: 6/3 = 2, not 4[39m
+    [90m 15| [39m])([32m'divide(%i, %i) = %i'[39m[33m,[39m (a[33m,[39m b[33m,[39m expected) [33m=>[39m {
+    [90m 16| [39m  [34mexpect[39m(a [33m/[39m b)[33m.[39m[34mtoBe[39m(expected)
+    [90m   | [39m                [31m^[39m
+    [90m 17| [39m})
+    [90m 18| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m with-exception.test.ts[2m > [22mthrows TypeError
+[31m[1mTypeError[22m: Cannot read properties of null (reading 'foo')[39m
+[36m [2m❯[22m with-exception.test.ts:[2m9:7[22m[39m
+    [90m  7| [39m[34mtest[39m([32m'throws TypeError'[39m[33m,[39m () [33m=>[39m {
+    [90m  8| [39m  [35mconst[39m obj[33m:[39m any [33m=[39m [35mnull[39m
+    [90m  9| [39m  obj[33m.[39mfoo[33m.[39mbar
+    [90m   | [39m      [31m^[39m
+    [90m 10| [39m})
+    [90m 11| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m with-exception.test.ts[2m > [22mthrows custom error
+[31m[1mError[22m: Something went wrong![39m
+[36m [2m❯[22m with-exception.test.ts:[2m13:9[22m[39m
+    [90m 11| [39m
+    [90m 12| [39m[34mtest[39m([32m'throws custom error'[39m[33m,[39m () [33m=>[39m {
+    [90m 13| [39m  [35mthrow[39m [35mnew[39m [33mError[39m([32m'Something went wrong!'[39m)
+    [90m   | [39m        [31m^[39m
+    [90m 14| [39m})
+    [90m 15| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m with-exception.test.ts[2m > [22mthrows ReferenceError
+[31m[1mReferenceError[22m: nonExistent is not defined[39m
+[36m [2m❯[22m with-exception.test.ts:[2m18:3[22m[39m
+    [90m 16| [39m[34mtest[39m([32m'throws ReferenceError'[39m[33m,[39m () [33m=>[39m {
+    [90m 17| [39m  [90m// @ts-expect-error intentional undefined variable[39m
+    [90m 18| [39m  nonExistent[33m.[39m[34mdoSomething[39m()
+    [90m   | [39m  [31m^[39m
+    [90m 19| [39m})
+    [90m 20| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m with-timeout.test.ts[2m > [22mslow test times out
+[31m[1mError[22m: Test timed out in 100ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+[36m [2m❯[22m with-timeout.test.ts:[2m7:1[22m[39m
+    [90m  5| [39m})
+    [90m  6| [39m
+    [90m  7| [39m[34mtest[39m([32m'slow test times out'[39m[33m,[39m { timeout[33m:[39m [34m100[39m }[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m   | [39m[31m^[39m
+    [90m  8| [39m  [35mawait[39m [35mnew[39m [33mPromise[39m((resolve) [33m=>[39m [34msetTimeout[39m(resolve[33m,[39m [34m2000[39m))
+    [90m  9| [39m  [34mexpect[39m([35mtrue[39m)[33m.[39m[34mtoBe[39m([35mtrue[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯[22m[39m
 
 
-[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (4)[39m
-[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m8 passed[39m[22m[2m | [22m[33m1 skipped[39m[2m | [22m[90m1 todo[39m[90m (11)[39m
-[2m   Start at [22m 00:30:09
-[2m   Duration [22m 122ms[2m (transform 70ms, setup 0ms, import 102ms, tests 8ms, environment 0ms)[22m
+[2m Test Files [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (7)[39m
+[2m      Tests [22m [1m[31m7 failed[39m[22m[2m | [22m[1m[32m16 passed[39m[22m[2m | [22m[33m1 skipped[39m[2m | [22m[90m1 todo[39m[90m (25)[39m
+[2m   Start at [22m 01:11:52
+[2m   Duration [22m 237ms[2m (transform 137ms, setup 0ms, import 200ms, tests 121ms, environment 1ms)[22m
 

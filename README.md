@@ -42,23 +42,36 @@ passing: 42
 ```
 passing: 40
 failing[2]:
-  - at: ./src/utils.test.ts:15:12
+  - at: src/utils.test.ts:15:12
     expected: "7"
     got: "6"
-  - at: ./src/api.test.ts:42:8
+  - at: src/api.test.ts:42:8
     error: TypeError: Cannot read property 'id' of undefined
 ```
 
-### With skipped/todo tests
+### With parameterized test failures
+
+```
+passing: 6
+failing[2]:
+  - at: math.test.ts:16:17
+    parameters[2]:
+      - expected: "1"
+        got: "2"
+      - expected: "4"
+        got: "2"
+```
+
+### With todo/skipped tests
 
 ```
 passing: 38
-skipped[2]:
-  - at: ./src/utils.test.ts
-    name: handles edge case
 todo[1]:
-  - at: ./src/api.test.ts
+  - at: src/api.test.ts
     name: implement error handling
+skipped[2]:
+  - at: src/utils.test.ts
+    name: handles edge case
 ```
 
 ## Colors
@@ -122,4 +135,14 @@ Traditional test reporters output verbose information optimized for human readab
 - Failure locations with expected/got values
 - Skipped/todo test names for context
 
-Benchmarks show ~40% token savings compared to JSON output with full test details.
+## Token Efficiency
+
+Measured on a test suite with 25 tests (16 passing, 7 failing, 1 skipped, 1 todo):
+
+| Reporter | Tokens | vs Default | vs JSON |
+|----------|-------:|:----------:|:-------:|
+| default  |  4,884 |     -      |   -10%  |
+| json     |  5,418 |    +11%    |    -    |
+| **toon** |  **232** | **-95%** | **-96%** |
+
+TOON uses ~95% fewer tokens than standard reporters.

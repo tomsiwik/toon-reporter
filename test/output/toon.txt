@@ -1,11 +1,25 @@
-[32mpassing: 8[0m
-[31mfailing[1]:[0m
-  - at: [33m./some-failing.test.ts:8:17[0m
+passing: 16
+failing[7]:
+  - at: some-failing.test.ts:8:17
     expected: "7"
     got: "6"
-[90mskipped[1]:[0m
-[90m  - at: ./with-skipped.test.ts:7:6[0m
-[90m    name: 3 + 3 = 6[0m
-[36mtodo[1]:[0m
-  - at: [33m./with-skipped.test.ts:11:6[0m
+  - at: with-exception.test.ts:9:7
+    error: TypeError: Cannot read properties of null (reading 'foo')
+  - at: with-exception.test.ts:13:9
+    error: Something went wrong!
+  - at: with-exception.test.ts:18:3
+    error: ReferenceError: nonExistent is not defined
+  - at: with-timeout.test.ts:7:1
+    error: Test timed out in 100ms.
+  - at: with-each.test.ts:16:17
+    parameters[2]:
+      - expected: "1"
+        got: "2"
+      - expected: "4"
+        got: "2"
+todo[1]:
+  - at: with-skipped.test.ts
     name: implement this later
+skipped[1]:
+  - at: with-skipped.test.ts
+    name: 3 + 3 = 6
