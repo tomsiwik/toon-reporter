@@ -1,8 +1,12 @@
 {
-  "name": "tsdown-starter",
+  "name": "@epicat/toon-reporter",
   "version": "0.0.0",
-  "private": true,
-  "description": "A simple example library built by tsdown",
+  "description": "A minimal Vitest reporter optimized for LLM consumption",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tomsiwik/toon-reporter.git"
+  },
+  "license": "MIT",
   "type": "module",
   "files": [
     "dist"
@@ -21,6 +25,7 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "@types/istanbul-lib-coverage": "^2.0.6",
     "@types/node": "^24.10.1",
     "@vitest/runner": "4.0.15",

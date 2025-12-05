@@ -79,7 +79,7 @@ export class ToonReporter implements Reporter {
 
   constructor(options: ToonReporterOptions = {}) {
     this.options = {
-      color: true,
+      color: false,
       ...options,
     }
   }

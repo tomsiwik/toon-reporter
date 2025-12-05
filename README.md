@@ -5,7 +5,7 @@ A minimal Vitest reporter optimized for LLM consumption. Outputs test results in
 ## Installation
 
 ```bash
-npm install toon-reporter
+npm install @epicat/toon-reporter
 ```
 
 ## Usage
@@ -13,7 +13,7 @@ npm install toon-reporter
 ### CLI
 
 ```bash
-npx vitest run --reporter=toon-reporter
+npx vitest run --reporter=@epicat/toon-reporter
 ```
 
 ### Config
@@ -24,7 +24,7 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
-    reporters: ['toon-reporter'],
+    reporters: ['@epicat/toon-reporter'],
   },
 })
 ```
@@ -91,10 +91,18 @@ Colors are automatically disabled when:
 
 ### `color`
 
-Enable/disable colored output (default: `true`).
+Enable/disable colored output (default: `false`).
 
 ```ts
-reporters: [['toon-reporter', { color: false }]]
+// vitest.config.ts
+import { defineConfig } from 'vitest/config'
+import { ToonReporter } from '@epicat/toon-reporter'
+
+export default defineConfig({
+  test: {
+    reporters: [new ToonReporter({ color: true })],
+  },
+})
 ```
 
 ### `outputFile`
