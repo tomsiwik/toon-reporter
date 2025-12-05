@@ -56,7 +56,7 @@ describe('ToonReporter', () => {
   })
 
   describe('skipped tests', () => {
-    it('should list skipped tests separately', async () => {
+    it('should list skipped tests in tabular format', async () => {
       const { stdout } = await runVitest({
         root: fixturesDir,
         reporters: [new ToonReporter({ color: false })],
@@ -64,34 +64,36 @@ describe('ToonReporter', () => {
       })
 
       expect(stdout).toContain('passing: 1')
-      expect(stdout).toContain('skipped[1]:')
-      expect(stdout).toContain('name: 3 + 3 = 6')
+      // TOON tabular format: skipped[N]{at,name}:
+      expect(stdout).toContain('skipped[1]{at,name}:')
+      expect(stdout).toContain('3 + 3 = 6')
     })
 
-    it('should list todo tests separately', async () => {
+    it('should list todo tests in tabular format', async () => {
       const { stdout } = await runVitest({
         root: fixturesDir,
         reporters: [new ToonReporter({ color: false })],
         include: ['with-skipped.test.ts'],
       })
 
-      expect(stdout).toContain('todo[1]:')
-      expect(stdout).toContain('name: implement this later')
+      // TOON tabular format: todo[N]{at,name}:
+      expect(stdout).toContain('todo[1]{at,name}:')
+      expect(stdout).toContain('implement this later')
     })
   })
 
   describe('output format', () => {
-    it('should use YAML-style list format for failures', async () => {
+    it('should use TOON list format for failures', async () => {
       const { stdout } = await runVitest({
         root: fixturesDir,
         reporters: [new ToonReporter({ color: false })],
         include: ['some-failing.test.ts'],
       })
 
-      // Should have YAML-style indented format
-      expect(stdout).toContain('  - at:')
-      expect(stdout).toContain('    expected:')
-      expect(stdout).toContain('    got:')
+      // TOON list format: - at: followed by indented properties
+      expect(stdout).toContain('- at:')
+      expect(stdout).toContain('  expected:')
+      expect(stdout).toContain('  got:')
     })
   })
 })

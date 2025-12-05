@@ -42,36 +42,36 @@ passing: 42
 ```
 passing: 40
 failing[2]:
-  - at: src/utils.test.ts:15:12
-    expected: "7"
-    got: "6"
-  - at: src/api.test.ts:42:8
-    error: TypeError: Cannot read property 'id' of undefined
+- at: src/utils.test.ts:15:12
+  expected: "7"
+  got: "6"
+- at: src/api.test.ts:42:8
+  error: TypeError: Cannot read property 'id' of undefined
 ```
 
 ### With parameterized test failures
 
+Uses TOON tabular format for uniform parameter arrays:
+
 ```
 passing: 6
 failing[2]:
-  - at: math.test.ts:16:17
-    parameters[2]:
-      - expected: "1"
-        got: "2"
-      - expected: "4"
-        got: "2"
+- at: math.test.ts:16:17
+  parameters[2]{expected,got}:
+    "1","2"
+    "4","2"
 ```
 
 ### With todo/skipped tests
 
+Uses TOON tabular format for uniform arrays:
+
 ```
 passing: 38
-todo[1]:
-  - at: src/api.test.ts
-    name: implement error handling
-skipped[2]:
-  - at: src/utils.test.ts
-    name: handles edge case
+todo[1]{at,name}:
+  src/api.test.ts,implement error handling
+skipped[2]{at,name}:
+  src/utils.test.ts,handles edge case
 ```
 
 ## Colors
@@ -143,6 +143,6 @@ Measured on a test suite with 25 tests (16 passing, 7 failing, 1 skipped, 1 todo
 |----------|-------:|:----------:|:-------:|
 | default  |  4,884 |     -      |   -10%  |
 | json     |  5,418 |    +11%    |    -    |
-| **toon** |  **232** | **-95%** | **-96%** |
+| **toon** |  **212** | **-96%** | **-96%** |
 
-TOON uses ~95% fewer tokens than standard reporters.
+TOON uses ~96% fewer tokens than standard reporters.

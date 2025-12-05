@@ -220,6 +220,41 @@ export class ToonReporter implements Reporter {
     await this.writeReport(output)
   }
 
+  /**
+   * Quote a string value per TOON spec:
+   * - Quote if contains delimiter (comma), newline, carriage return, tab, backslash, or quote
+   * - Quote if matches reserved keywords (true, false, null)
+   * - Quote if looks like a number but should be a string
+   */
+  private toonQuote(value: string, delimiter: string = ','): string {
+    // Check if quoting is needed
+    const needsQuote =
+      value.includes(delimiter) ||
+      value.includes('\n') ||
+      value.includes('\r') ||
+      value.includes('\t') ||
+      value.includes('\\') ||
+      value.includes('"') ||
+      value === 'true' ||
+      value === 'false' ||
+      value === 'null' ||
+      /^-?\d+(\.\d+)?$/.test(value) // looks like a number
+
+    if (!needsQuote) {
+      return value
+    }
+
+    // Escape per TOON spec: only \\ \" \n \r \t are valid
+    const escaped = value
+      .replace(/\\/g, '\\\\')
+      .replace(/"/g, '\\"')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/\t/g, '\\t')
+
+    return `"${escaped}"`
+  }
+
   private formatOutput(passing: number, failures: ToonFailure[], skipped: ToonSkipped[], todo: ToonSkipped[]): string {
     const useColor = this.options.color && !this.options.outputFile && !this.options._captureOutput && !process.env.NO_COLOR && !process.env.CI
     const { green, red, yellow, cyan, gray, reset } = useColor ? colors : { green: '', red: '', yellow: '', cyan: '', gray: '', reset: '' }
@@ -258,44 +293,55 @@ export class ToonReporter implements Reporter {
 
       // Output regular failures
       for (const failure of regular) {
-        lines.push(`  - at: ${formatLocation(failure.at, failure.absPath, failure.line, failure.column)}`)
+        lines.push(`- at: ${formatLocation(failure.at, failure.absPath, failure.line, failure.column)}`)
         if (failure.expected !== undefined && failure.got !== undefined) {
-          lines.push(`    expected: ${JSON.stringify(failure.expected)}`)
-          lines.push(`    got: ${JSON.stringify(failure.got)}`)
+          lines.push(`  expected: ${this.toonQuote(failure.expected)}`)
+          lines.push(`  got: ${this.toonQuote(failure.got)}`)
         } else if (failure.error) {
-          lines.push(`    error: ${failure.error}`)
+          lines.push(`  error: ${this.toonQuote(failure.error)}`)
         }
       }
 
-      // Output grouped parameterized failures
+      // Output grouped parameterized failures using tabular format
       for (const [, groupedFailures] of grouped) {
         const first = groupedFailures[0]
-        lines.push(`  - at: ${formatLocation(first.at, first.absPath, first.line, first.column)}`)
-        lines.push(`    parameters[${groupedFailures.length}]:`)
-        for (const failure of groupedFailures) {
-          if (failure.expected !== undefined && failure.got !== undefined) {
-            lines.push(`      - expected: ${JSON.stringify(failure.expected)}`)
-            lines.push(`        got: ${JSON.stringify(failure.got)}`)
-          } else if (failure.error) {
-            lines.push(`      - error: ${failure.error}`)
+        lines.push(`- at: ${formatLocation(first.at, first.absPath, first.line, first.column)}`)
+
+        // Check if all failures have expected/got (assertion errors) or all have error
+        const hasExpectedGot = groupedFailures.every(f => f.expected !== undefined && f.got !== undefined)
+
+        if (hasExpectedGot) {
+          lines.push(`  parameters[${groupedFailures.length}]{expected,got}:`)
+          for (const failure of groupedFailures) {
+            lines.push(`    ${this.toonQuote(failure.expected!)},${this.toonQuote(failure.got!)}`)
+          }
+        } else {
+          // Mixed or error-only - use error tabular format
+          lines.push(`  parameters[${groupedFailures.length}]{error}:`)
+          for (const failure of groupedFailures) {
+            if (failure.error) {
+              lines.push(`    ${this.toonQuote(failure.error)}`)
+            }
           }
         }
       }
     }
 
+    // Use tabular format for todo (uniform structure)
     if (todo.length > 0) {
-      lines.push(`${cyan}todo[${todo.length}]:${reset}`)
+      lines.push(`${cyan}todo[${todo.length}]{at,name}:${reset}`)
       for (const t of todo) {
-        lines.push(`  - at: ${formatLocation(t.at, t.absPath, t.line, t.column)}`)
-        lines.push(`    name: ${t.name}`)
+        const at = formatLocation(t.at, t.absPath, t.line, t.column)
+        lines.push(`${cyan}  ${at},${this.toonQuote(t.name)}${reset}`)
       }
     }
 
+    // Use tabular format for skipped (uniform structure)
     if (skipped.length > 0) {
-      lines.push(`${gray}skipped[${skipped.length}]:${reset}`)
+      lines.push(`${gray}skipped[${skipped.length}]{at,name}:${reset}`)
       for (const s of skipped) {
-        lines.push(`${gray}  - at: ${formatLocation(s.at, s.absPath, s.line, s.column, gray)}${reset}`)
-        lines.push(`${gray}    name: ${s.name}${reset}`)
+        const at = formatLocation(s.at, s.absPath, s.line, s.column, gray)
+        lines.push(`${gray}  ${at},${this.toonQuote(s.name)}${reset}`)
       }
     }
 
