@@ -4,7 +4,7 @@
   "description": "A minimal Vitest reporter optimized for LLM consumption",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tomsiwik/toon-reporter.git"
+    "url": "git+https://github.com/tomsiwik/toon-reporter.git"
   },
   "license": "MIT",
   "type": "module",
