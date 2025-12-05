@@ -1,6 +1,6 @@
 {
   "name": "@epicat/toon-reporter",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A minimal Vitest reporter optimized for LLM consumption",
   "repository": {
     "type": "git",
