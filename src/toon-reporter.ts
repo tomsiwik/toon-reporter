@@ -177,7 +177,8 @@ export class ToonReporter implements Reporter {
       .replace(/^(failing\[.*?\]:)/m, colors.red('$1'))
       .replace(/^(todo\[.*?\]:)/m, colors.cyan('$1'))
       .replace(/^(skipped\[.*?\]:)/m, colors.gray('$1'))
-      .replace(/(\S+\.test\.\w+:\d+:\d+)/g, colors.yellow('$1'))
+      .replace(/at: "([^"]+)"/g, `at: "${colors.yellow('$1')}"`)
+      .replace(/("at",)([^,\n]+)/g, `$1${colors.yellow('$2')}`)
   }
 
   async writeReport(report: string): Promise<void> {
