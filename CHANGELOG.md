@@ -1,5 +1,12 @@
 # @epicat/toon-reporter
 
+## 0.0.3
+
+### Patch Changes
+
+- 1430416: fixes tab/indentations
+- 72ed91b: Optimize for @toon-format/toon as dependency and remove redundant code. Change color behaviour to opt-in
+
 ## 0.0.2
 
 ### Patch Changes
