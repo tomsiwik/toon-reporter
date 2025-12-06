@@ -108,4 +108,51 @@ describe('ToonReporter', () => {
       expect(stdout).toContain('failing[1]{at,expected,got}:')
     })
   })
+
+  describe('coverage', () => {
+    it('should hide 100% covered files in non-verbose mode', async () => {
+      const { stdout } = await runVitest({
+        root: fixturesDir,
+        reporters: [new ToonReporter({ color: false, verbose: false })],
+        include: ['with-coverage.test.ts'],
+        coverage: {
+          enabled: true,
+          provider: 'v8',
+          include: ['coverage-src/**'],
+        },
+      })
+
+      expect(stdout).toContain('passing: 6')
+      expect(stdout).toContain('coverage:')
+      expect(stdout).toContain('"total%":')
+      // math.ts has uncovered lines (multiply function)
+      expect(stdout).toContain('math.ts')
+      // utils.ts is 100% covered - should NOT appear
+      expect(stdout).not.toContain('utils.ts')
+    })
+
+    it('should show all files in verbose mode', async () => {
+      const { stdout } = await runVitest({
+        root: fixturesDir,
+        reporters: [new ToonReporter({ color: false, verbose: true })],
+        include: ['with-coverage.test.ts'],
+        coverage: {
+          enabled: true,
+          provider: 'v8',
+          include: ['coverage-src/**'],
+        },
+      })
+
+      expect(stdout).toContain('passing: 6')
+      expect(stdout).toContain('coverage:')
+      // Both files should appear in verbose mode
+      expect(stdout).toContain('math.ts')
+      expect(stdout).toContain('utils.ts')
+      // Should have percentage columns
+      expect(stdout).toContain('"lines%"')
+      expect(stdout).toContain('"stmts%"')
+      expect(stdout).toContain('"branch%"')
+      expect(stdout).toContain('"funcs%"')
+    })
+  })
 })

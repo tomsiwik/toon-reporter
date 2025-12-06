@@ -34,8 +34,11 @@
   "devDependencies": {
     "@changesets/cli": "^2.29.8",
     "@types/node": "^24.10.1",
+    "@vitest/coverage-v8": "^4.0.15",
     "@vitest/runner": "4.0.15",
     "@vitest/utils": "4.0.15",
+    "gpt-tokenizer": "^3.4.0",
+    "istanbul-lib-coverage": "^3.2.2",
     "tsdown": "^0.16.4",
     "typescript": "^5.9.3",
     "vitest": "4.0.15"

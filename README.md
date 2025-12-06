@@ -74,6 +74,40 @@ skipped[2]{at,name}:
   src/utils.test.ts,handles edge case
 ```
 
+### With coverage
+
+Coverage is automatically included when running with `--coverage`. No extra configuration needed:
+
+```bash
+npx vitest run --coverage --reporter=@epicat/toon-reporter
+```
+
+Output includes total percentages and uncovered lines per file:
+
+```
+passing: 8
+coverage:
+  "total%":
+    lines: 60.99
+    stmts: 58.82
+    branch: 44.34
+    funcs: 57.57
+  files[1]{file,uncoveredLines}:
+    src/toon-reporter.ts,"12-14,19-23,32,99"
+```
+
+- **Total percentages**: Help teams track coverage thresholds
+- **Per-file uncovered lines**: Give LLMs actionable info to improve coverage
+- **100% covered files are hidden** by default to reduce noise
+
+With `verbose: true`, all files appear with per-file percentages:
+
+```
+  files[2]{file,uncoveredLines,"lines%","stmts%","branch%","funcs%"}:
+    src/toon-reporter.ts,"12-14,19-23,32,99",56.89,55.63,43.63,61.53
+    test/test-utils.ts,"",100,100,100,100
+```
+
 ## Colors
 
 - **Green**: `passing` count
@@ -122,6 +156,14 @@ Write report to a file instead of stdout.
 reporters: [['toon-reporter', { outputFile: 'test-results.txt' }]]
 ```
 
+### `verbose`
+
+Include per-file coverage percentages (lines, stmts, branch, funcs) alongside uncovered lines.
+
+```ts
+reporters: [new ToonReporter({ verbose: true })]
+```
+
 ## Skipped/Todo Line Numbers
 
 To get line:column information for skipped and todo tests, enable `includeTaskLocation` in your vitest config:
@@ -151,6 +193,7 @@ Traditional test reporters output verbose information optimized for human readab
 - Pass count
 - Failure locations with expected/got values
 - Skipped/todo test names for context
+- Coverage totals and uncovered lines (when `--coverage` is enabled)
 
 ## Token Efficiency
 

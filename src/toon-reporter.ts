@@ -35,6 +35,8 @@ function shouldUseColor(option?: boolean): boolean {
 export interface ToonReporterOptions {
   outputFile?: string
   color?: boolean
+  /** Include per-file coverage percentages (lines, stmts, branch, funcs) */
+  verbose?: boolean
   /** @internal Used for testing to capture output */
   _captureOutput?: (output: string) => void
 }
@@ -52,11 +54,33 @@ interface SkippedData {
   name: string
 }
 
+interface FileCoverageEntry {
+  file: string
+  'lines%'?: number
+  'stmts%'?: number
+  'branch%'?: number
+  'funcs%'?: number
+  uncoveredLines: string
+}
+
+interface CoverageTotal {
+  lines: number
+  stmts: number
+  branch: number
+  funcs: number
+}
+
+interface CoverageData {
+  'total%': CoverageTotal
+  files?: FileCoverageEntry[]
+}
+
 interface ReportData {
   passing: number
   failing?: FailureData[]
   todo?: SkippedData[]
   skipped?: SkippedData[]
+  coverage?: CoverageData
 }
 
 export class ToonReporter implements Reporter {
@@ -64,6 +88,7 @@ export class ToonReporter implements Reporter {
   ctx!: Vitest
   options: ToonReporterOptions
   private useColor: boolean
+  private coverageMap: unknown
 
   constructor(options: ToonReporterOptions = {}) {
     this.options = options
@@ -73,6 +98,89 @@ export class ToonReporter implements Reporter {
   onInit(ctx: Vitest): void {
     this.ctx = ctx
     this.start = Date.now()
+    this.coverageMap = undefined
+  }
+
+  onCoverage(coverage: unknown): void {
+    this.coverageMap = coverage
+  }
+
+  private getCoverageSummary(): CoverageData | undefined {
+    if (!this.coverageMap) return undefined
+    type IstanbulFileCoverage = {
+      toSummary: () => { toJSON: () => Record<string, { pct: number }> }
+      getUncoveredLines: () => number[]
+    }
+    type CoverageMap = {
+      getCoverageSummary?: () => { toJSON: () => Record<string, { pct: number }> }
+      files?: () => string[]
+      fileCoverageFor?: (file: string) => IstanbulFileCoverage
+    }
+    const map = this.coverageMap as CoverageMap
+    if (typeof map.getCoverageSummary !== 'function') return undefined
+
+    const summary = map.getCoverageSummary().toJSON()
+    const rootDir = this.ctx.config.root
+
+    const result: CoverageData = {
+      'total%': {
+        lines: summary.lines?.pct ?? 0,
+        stmts: summary.statements?.pct ?? 0,
+        branch: summary.branches?.pct ?? 0,
+        funcs: summary.functions?.pct ?? 0,
+      },
+    }
+
+    // Include per-file coverage
+    // Default: only files with uncovered lines
+    // Verbose: all files with percentages
+    if (map.files && map.fileCoverageFor) {
+      const entries: FileCoverageEntry[] = []
+      const verbose = this.options.verbose
+      for (const file of map.files()) {
+        const fc = map.fileCoverageFor(file)
+        const uncoveredLines = fc.getUncoveredLines()
+        const hasGaps = uncoveredLines.length > 0
+
+        // In non-verbose mode, skip files with 100% coverage
+        if (!verbose && !hasGaps) continue
+
+        const entry: FileCoverageEntry = {
+          file: relative(rootDir, file),
+          uncoveredLines: this.formatLineRanges(uncoveredLines),
+        }
+        if (verbose) {
+          const fileSummary = fc.toSummary().toJSON()
+          entry['lines%'] = fileSummary.lines?.pct ?? 0
+          entry['stmts%'] = fileSummary.statements?.pct ?? 0
+          entry['branch%'] = fileSummary.branches?.pct ?? 0
+          entry['funcs%'] = fileSummary.functions?.pct ?? 0
+        }
+        entries.push(entry)
+      }
+      if (entries.length > 0) result.files = entries
+    }
+
+    return result
+  }
+
+  private formatLineRanges(lines: (number | string)[]): string {
+    if (lines.length === 0) return ''
+    const sorted = lines.map(Number).sort((a, b) => a - b)
+    const ranges: string[] = []
+    let start = sorted[0]
+    let end = start
+
+    for (let i = 1; i <= sorted.length; i++) {
+      if (sorted[i] === end + 1) {
+        end = sorted[i]
+      } else {
+        ranges.push(start === end ? String(start) : `${start}-${end}`)
+        start = sorted[i]
+        end = start
+      }
+    }
+    return ranges.join(',')
   }
 
   private formatLocation(relPath: string, line?: number, column?: number): string {
@@ -166,6 +274,9 @@ export class ToonReporter implements Reporter {
     if (failures.length > 0) report.failing = failures
     if (todoTests.length > 0) report.todo = todoTests.map(mapToSkipped)
     if (skippedTests.length > 0) report.skipped = skippedTests.map(mapToSkipped)
+
+    const coverage = this.getCoverageSummary()
+    if (coverage) report.coverage = coverage
 
     await this.writeReport(encode(report))
   }
