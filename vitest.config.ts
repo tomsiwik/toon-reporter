@@ -4,6 +4,6 @@ export default defineConfig({
   test: {
     include: ['test/**/*.test.ts'],
     exclude: ['test/fixtures/**'],
-    reporters: ['verbose'],
+    reporters: ['@epicat/toon-reporter'],
   },
 })

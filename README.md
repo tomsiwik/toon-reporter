@@ -42,11 +42,11 @@ passing: 42
 ```
 passing: 40
 failing[2]:
-- at: src/utils.test.ts:15:12
-  expected: "7"
-  got: "6"
-- at: src/api.test.ts:42:8
-  error: TypeError: Cannot read property 'id' of undefined
+  - at: src/utils.test.ts:15:12
+    expected: "7"
+    got: "6"
+  - at: src/api.test.ts:42:8
+    error: TypeError: Cannot read property 'id' of undefined
 ```
 
 ### With parameterized test failures
@@ -56,10 +56,10 @@ Uses TOON tabular format for uniform parameter arrays:
 ```
 passing: 6
 failing[2]:
-- at: math.test.ts:16:17
-  parameters[2]{expected,got}:
-    "1","2"
-    "4","2"
+  - at: math.test.ts:16:17
+    parameters[2]{expected,got}:
+      "1","2"
+      "4","2"
 ```
 
 ### With todo/skipped tests

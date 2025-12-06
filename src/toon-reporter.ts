@@ -291,36 +291,36 @@ export class ToonReporter implements Reporter {
         }
       }
 
-      // Output regular failures
+      // Output regular failures (list items at depth +1 = 2 spaces)
       for (const failure of regular) {
-        lines.push(`- at: ${formatLocation(failure.at, failure.absPath, failure.line, failure.column)}`)
+        lines.push(`  - at: ${formatLocation(failure.at, failure.absPath, failure.line, failure.column)}`)
         if (failure.expected !== undefined && failure.got !== undefined) {
-          lines.push(`  expected: ${this.toonQuote(failure.expected)}`)
-          lines.push(`  got: ${this.toonQuote(failure.got)}`)
+          lines.push(`    expected: ${this.toonQuote(failure.expected)}`)
+          lines.push(`    got: ${this.toonQuote(failure.got)}`)
         } else if (failure.error) {
-          lines.push(`  error: ${this.toonQuote(failure.error)}`)
+          lines.push(`    error: ${this.toonQuote(failure.error)}`)
         }
       }
 
       // Output grouped parameterized failures using tabular format
       for (const [, groupedFailures] of grouped) {
         const first = groupedFailures[0]
-        lines.push(`- at: ${formatLocation(first.at, first.absPath, first.line, first.column)}`)
+        lines.push(`  - at: ${formatLocation(first.at, first.absPath, first.line, first.column)}`)
 
         // Check if all failures have expected/got (assertion errors) or all have error
         const hasExpectedGot = groupedFailures.every(f => f.expected !== undefined && f.got !== undefined)
 
         if (hasExpectedGot) {
-          lines.push(`  parameters[${groupedFailures.length}]{expected,got}:`)
+          lines.push(`    parameters[${groupedFailures.length}]{expected,got}:`)
           for (const failure of groupedFailures) {
-            lines.push(`    ${this.toonQuote(failure.expected!)},${this.toonQuote(failure.got!)}`)
+            lines.push(`      ${this.toonQuote(failure.expected!)},${this.toonQuote(failure.got!)}`)
           }
         } else {
           // Mixed or error-only - use error tabular format
-          lines.push(`  parameters[${groupedFailures.length}]{error}:`)
+          lines.push(`    parameters[${groupedFailures.length}]{error}:`)
           for (const failure of groupedFailures) {
             if (failure.error) {
-              lines.push(`    ${this.toonQuote(failure.error)}`)
+              lines.push(`      ${this.toonQuote(failure.error)}`)
             }
           }
         }
