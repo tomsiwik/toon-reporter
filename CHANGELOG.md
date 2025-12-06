@@ -1,5 +1,11 @@
 # @epicat/toon-reporter
 
+## 0.0.5
+
+### Patch Changes
+
+- cc55716: adds coverage reports
+
 ## 0.0.4
 
 ### Patch Changes
