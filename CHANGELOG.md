@@ -1,5 +1,11 @@
 # @epicat/toon-reporter
 
+## 0.0.4
+
+### Patch Changes
+
+- 2a1bfa4: clean up and color highlight any file instead of .test. suffix only (allowing .spec etc)
+
 ## 0.0.3
 
 ### Patch Changes
