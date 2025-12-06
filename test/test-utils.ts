@@ -1,6 +1,7 @@
 import type { TestUserConfig } from 'vitest/node'
 import { Readable, Writable } from 'node:stream'
 import { startVitest } from 'vitest/node'
+import { ToonReporter } from '../src/toon-reporter'
 
 export interface RunVitestResult {
   stdout: string
@@ -14,6 +15,14 @@ export async function runVitest(
 ): Promise<RunVitestResult> {
   let stdoutContent = ''
   let stderrContent = ''
+
+  // Wrap ToonReporter to capture output
+  const reporters = options.reporters?.map((r) => {
+    if (r instanceof ToonReporter) {
+      r.options._captureOutput = (output: string) => { stdoutContent = output }
+    }
+    return r
+  }) || []
 
   const stdout = new Writable({
     write(chunk, _encoding, callback) {
@@ -41,8 +50,8 @@ export async function runVitest(
   try {
     const ctx = await startVitest('test', filters, {
       watch: false,
-      reporters: ['verbose'],
       ...options,
+      reporters,
       env: {
         NO_COLOR: 'true',
         ...options.env,

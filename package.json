@@ -24,24 +24,21 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "peerDependencies": {
+    "vitest": ">=2.0.0"
+  },
+  "dependencies": {
+    "@toon-format/toon": "^2.0.1",
+    "pathe": "^2.0.3"
+  },
   "devDependencies": {
     "@changesets/cli": "^2.29.8",
-    "@types/istanbul-lib-coverage": "^2.0.6",
     "@types/node": "^24.10.1",
     "@vitest/runner": "4.0.15",
-    "@vitest/snapshot": "4.0.15",
     "@vitest/utils": "4.0.15",
-    "execa": "^9.6.1",
-    "gpt-tokenizer": "^3.4.0",
-    "istanbul-lib-coverage": "^3.2.2",
-    "pathe": "^2.0.3",
     "tsdown": "^0.16.4",
     "typescript": "^5.9.3",
-    "vite": "^7.2.6",
     "vitest": "4.0.15"
   },
-  "packageManager": "pnpm@10.22.0+sha512.bf049efe995b28f527fd2b41ae0474ce29186f7edcb3bf545087bd61fbbebb2bf75362d1307fda09c2d288e1e499787ac12d4fcb617a974718a6051f2eee741c",
-  "dependencies": {
-    "@toon-format/toon": "^2.0.1"
-  }
+  "packageManager": "pnpm@10.22.0+sha512.bf049efe995b28f527fd2b41ae0474ce29186f7edcb3bf545087bd61fbbebb2bf75362d1307fda09c2d288e1e499787ac12d4fcb617a974718a6051f2eee741c"
 }

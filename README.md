@@ -82,16 +82,19 @@ skipped[2]{at,name}:
 - **Gray**: `skipped` tests
 - **Cyan**: `todo` tests
 
-Colors are automatically disabled when:
-- `NO_COLOR` environment variable is set
-- `CI` environment variable is set
+Colors are enabled when:
+- `COLOR` environment variable is set, OR
+- `color: true` option is passed
+
+Colors are always disabled when:
+- `CI` environment variable is set (hard disable)
 - Output is written to a file
 
 ## Options
 
 ### `color`
 
-Enable/disable colored output (default: `false`).
+Enable/disable colored output.
 
 ```ts
 // vitest.config.ts
@@ -103,6 +106,12 @@ export default defineConfig({
     reporters: [new ToonReporter({ color: true })],
   },
 })
+```
+
+Or via environment variable:
+
+```bash
+COLOR=1 npx vitest run --reporter=@epicat/toon-reporter
 ```
 
 ### `outputFile`

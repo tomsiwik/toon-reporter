@@ -37,10 +37,11 @@ describe('ToonReporter', () => {
       })
 
       expect(stdout).toContain('passing: 1')
-      expect(stdout).toContain('failing[1]:')
-      expect(stdout).toContain('at: some-failing.test.ts:8:17')
-      expect(stdout).toContain('expected: "7"')
-      expect(stdout).toContain('got: "6"')
+      // TOON uses tabular format for uniform failures
+      expect(stdout).toContain('failing[1]{at,expected,got}:')
+      expect(stdout).toContain('some-failing.test.ts:8:17')
+      expect(stdout).toContain('"7"')
+      expect(stdout).toContain('"6"')
     })
 
     it('should include relative file path with line and column', async () => {
@@ -50,8 +51,8 @@ describe('ToonReporter', () => {
         include: ['some-failing.test.ts'],
       })
 
-      // Should be relative path (without ./ prefix)
-      expect(stdout).toMatch(/at: [\w-]+\.test\.ts:\d+:\d+/)
+      // Should be relative path with line:column
+      expect(stdout).toMatch(/some-failing\.test\.ts:\d+:\d+/)
     })
   })
 
@@ -83,17 +84,28 @@ describe('ToonReporter', () => {
   })
 
   describe('output format', () => {
-    it('should use TOON list format for failures', async () => {
+    it('should use TOON dash list for non-uniform failures', async () => {
+      const { stdout } = await runVitest({
+        root: fixturesDir,
+        reporters: [new ToonReporter({ color: false })],
+        include: ['some-failing.test.ts', 'with-exception.test.ts'],
+      })
+
+      // TOON dash list format for non-uniform objects (mixed expected/got and error)
+      expect(stdout).toContain('- at:')
+      expect(stdout).toContain('expected:')
+      expect(stdout).toContain('error:')
+    })
+
+    it('should use TOON tabular format for uniform failures', async () => {
       const { stdout } = await runVitest({
         root: fixturesDir,
         reporters: [new ToonReporter({ color: false })],
         include: ['some-failing.test.ts'],
       })
 
-      // TOON list format: - at: followed by indented properties
-      expect(stdout).toContain('- at:')
-      expect(stdout).toContain('  expected:')
-      expect(stdout).toContain('  got:')
+      // TOON tabular format for uniform objects
+      expect(stdout).toContain('failing[1]{at,expected,got}:')
     })
   })
 })
