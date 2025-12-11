@@ -1,6 +1,6 @@
 # toon-reporter
 
-A minimal Vitest reporter optimized for LLM consumption. Outputs test results in a compact, token-efficient format.
+A minimal Vitest and Playwright reporter optimized for LLM consumption. Outputs test results in a compact, token-efficient format.
 
 ## Installation
 
@@ -10,13 +10,15 @@ npm install @epicat/toon-reporter
 
 ## Usage
 
-### CLI
+### Vitest
+
+#### CLI
 
 ```bash
 npx vitest run --reporter=@epicat/toon-reporter
 ```
 
-### Config
+#### Config
 
 ```ts
 // vitest.config.ts
@@ -29,6 +31,34 @@ export default defineConfig({
 })
 ```
 
+### Playwright
+
+#### Config
+
+```ts
+// playwright.config.ts
+import { defineConfig } from '@playwright/test'
+
+export default defineConfig({
+  reporter: [['@epicat/toon-reporter/playwright']],
+})
+```
+
+#### With options
+
+```ts
+// playwright.config.ts
+import { defineConfig } from '@playwright/test'
+
+export default defineConfig({
+  reporter: [
+    ['@epicat/toon-reporter/playwright', {
+      outputFile: 'test-results.toon'
+    }]
+  ],
+})
+```
+
 ## Output Format
 
 ### All tests passing
@@ -37,7 +67,7 @@ export default defineConfig({
 passing: 42
 ```
 
-### With failures
+### With failures (Vitest)
 
 ```
 passing: 40
@@ -49,7 +79,15 @@ failing[2]:
     error: TypeError: Cannot read property 'id' of undefined
 ```
 
-### With parameterized test failures
+### With failures (Playwright)
+
+```
+passing: 1
+failing[1]{at,expected,got}:
+  "login.spec.ts:7:42",Welcome,Hello World
+```
+
+### With parameterized test failures (Vitest)
 
 Uses TOON tabular format for uniform parameter arrays:
 
@@ -69,12 +107,22 @@ Uses TOON tabular format for uniform arrays:
 ```
 passing: 38
 todo[1]{at,name}:
-  src/api.test.ts,implement error handling
+  "src/api.test.ts:15:3",implement error handling
 skipped[2]{at,name}:
-  src/utils.test.ts,handles edge case
+  "src/utils.test.ts:8:3",handles edge case
 ```
 
-### With coverage
+### With flaky tests (Playwright)
+
+Tests that fail initially but pass on retry are reported as flaky:
+
+```
+passing: 5
+flaky[1]{at,name,retries}:
+  "checkout.spec.ts:12:3",should complete payment,2
+```
+
+### With coverage (Vitest only)
 
 Coverage is automatically included when running with `--coverage`. No extra configuration needed:
 
@@ -112,7 +160,7 @@ With `verbose: true`, all files appear with per-file percentages:
 
 - **Green**: `passing` count
 - **Red**: `failing` header
-- **Yellow**: file paths
+- **Yellow**: `flaky` header, file paths
 - **Gray**: `skipped` tests
 - **Cyan**: `todo` tests
 
@@ -153,7 +201,7 @@ COLOR=1 npx vitest run --reporter=@epicat/toon-reporter
 Write report to a file instead of stdout.
 
 ```ts
-reporters: [['toon-reporter', { outputFile: 'test-results.txt' }]]
+reporters: [['@epicat/toon-reporter', { outputFile: 'test-results.txt' }]]
 ```
 
 ### `verbose`
@@ -166,6 +214,8 @@ reporters: [new ToonReporter({ verbose: true })]
 
 ## Skipped/Todo Line Numbers
 
+### Vitest
+
 To get line:column information for skipped and todo tests, enable `includeTaskLocation` in your vitest config:
 
 ```ts
@@ -173,7 +223,7 @@ To get line:column information for skipped and todo tests, enable `includeTaskLo
 export default defineConfig({
   test: {
     includeTaskLocation: true,
-    reporters: ['toon-reporter'],
+    reporters: ['@epicat/toon-reporter'],
   },
 })
 ```
@@ -181,10 +231,30 @@ export default defineConfig({
 Or via CLI:
 
 ```bash
-npx vitest run --reporter=toon-reporter --includeTaskLocation
+npx vitest run --reporter=@epicat/toon-reporter --includeTaskLocation
 ```
 
 Without this option, skipped/todo tests will only show the file path (not line:column). This is a Vitest limitation - test locations are only collected when this config is enabled before test collection.
+
+### Playwright
+
+Playwright always includes test locations. Tests marked with `test.fixme()` are reported as `todo`, while `test.skip()` tests are reported as `skipped`.
+
+## Playwright-Specific Features
+
+### Flaky Test Detection
+
+When `retries` is configured in your Playwright config, tests that fail initially but pass on retry are reported as flaky:
+
+```ts
+// playwright.config.ts
+export default defineConfig({
+  retries: 2,
+  reporter: [['@epicat/toon-reporter/playwright']],
+})
+```
+
+Output: `flaky[1]{at,name,retries}: "test.spec.ts:5:3",should work,1`
 
 ## Why?
 
@@ -192,8 +262,9 @@ Traditional test reporters output verbose information optimized for human readab
 
 - Pass count
 - Failure locations with expected/got values
+- Flaky test detection with retry counts (Playwright)
 - Skipped/todo test names for context
-- Coverage totals and uncovered lines (when `--coverage` is enabled)
+- Coverage totals and uncovered lines (Vitest with `--coverage`)
 
 ## Token Efficiency
 

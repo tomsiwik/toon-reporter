@@ -1,9 +1,10 @@
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from "vitest/config";
+import ToonReporter from "./src";
 
 export default defineConfig({
   test: {
-    include: ['test/**/*.test.ts'],
-    exclude: ['test/fixtures/**'],
-    reporters: ['@epicat/toon-reporter'],
+    include: ["test/**/*.test.ts"],
+    exclude: ["test/fixtures/**"],
+    reporters: [new ToonReporter({ color: false })],
   },
-})
+});

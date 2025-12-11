@@ -99,6 +99,12 @@ export class ToonReporter implements Reporter {
     this.ctx = ctx
     this.start = Date.now()
     this.coverageMap = undefined
+
+    // Suppress default coverage reporters - ToonReporter handles coverage output in TOON format
+    const coverage = ctx.config.coverage as { reporter?: unknown[] } | undefined
+    if (coverage?.reporter) {
+      coverage.reporter = []
+    }
   }
 
   onCoverage(coverage: unknown): void {

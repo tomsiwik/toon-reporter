@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Page</title>
+</head>
+<body>
+  <h1 id="title">Hello World</h1>
+  <p id="message">Welcome to the test page</p>
+  <button id="counter-btn">Count: 0</button>
+  <script>
+    let count = 0;
+    document.getElementById('counter-btn').addEventListener('click', () => {
+      count++;
+      document.getElementById('counter-btn').textContent = `Count: ${count}`;
+    });
+  </script>
+</body>
+</html>
