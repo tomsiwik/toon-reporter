@@ -1,5 +1,11 @@
 # @epicat/toon-reporter
 
+## 0.0.6
+
+### Patch Changes
+
+- 757f50a: adds simplified playright reporter (no noise with tags, retries & all)
+
 ## 0.0.5
 
 ### Patch Changes
