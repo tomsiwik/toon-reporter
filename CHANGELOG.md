@@ -1,5 +1,11 @@
 # @epicat/toon-reporter
 
+## 0.0.8
+
+### Patch Changes
+
+- a7f8f3e: adds sparser coverage report and only omit 100% all stats
+
 ## 0.0.7
 
 ### Patch Changes
