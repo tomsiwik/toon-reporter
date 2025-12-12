@@ -35,7 +35,7 @@ function shouldUseColor(option?: boolean): boolean {
 export interface ToonReporterOptions {
   outputFile?: string
   color?: boolean
-  /** Include per-file coverage percentages (lines, stmts, branch, funcs) */
+  /** When true, shows all files and all coverage metrics. When false (default), only shows files with gaps and only metrics < 100% */
   verbose?: boolean
   /** @internal Used for testing to capture output */
   _captureOutput?: (output: string) => void
@@ -136,30 +136,45 @@ export class ToonReporter implements Reporter {
     }
 
     // Include per-file coverage
-    // Default: only files with uncovered lines
-    // Verbose: all files with percentages
+    // Default: only files with gaps (any metric < 100%), showing only metrics that need improvement
+    // Verbose: all files with all metrics
     if (map.files && map.fileCoverageFor) {
       const entries: FileCoverageEntry[] = []
       const verbose = this.options.verbose
       for (const file of map.files()) {
         const fc = map.fileCoverageFor(file)
+        const fileSummary = fc.toSummary().toJSON()
         const uncoveredLines = fc.getUncoveredLines()
-        const hasGaps = uncoveredLines.length > 0
 
-        // In non-verbose mode, skip files with 100% coverage
-        if (!verbose && !hasGaps) continue
+        const lines = fileSummary.lines?.pct ?? 100
+        const stmts = fileSummary.statements?.pct ?? 100
+        const branch = fileSummary.branches?.pct ?? 100
+        const funcs = fileSummary.functions?.pct ?? 100
+
+        const isPerfect = lines === 100 && stmts === 100 && branch === 100 && funcs === 100
+
+        // In non-verbose mode, skip files with 100% on all metrics
+        if (!verbose && isPerfect) continue
 
         const entry: FileCoverageEntry = {
           file: relative(rootDir, file),
           uncoveredLines: this.formatLineRanges(uncoveredLines),
         }
+
         if (verbose) {
-          const fileSummary = fc.toSummary().toJSON()
-          entry['lines%'] = fileSummary.lines?.pct ?? 0
-          entry['stmts%'] = fileSummary.statements?.pct ?? 0
-          entry['branch%'] = fileSummary.branches?.pct ?? 0
-          entry['funcs%'] = fileSummary.functions?.pct ?? 0
+          // Verbose: show all metrics
+          entry['lines%'] = lines
+          entry['stmts%'] = stmts
+          entry['branch%'] = branch
+          entry['funcs%'] = funcs
+        } else {
+          // Sparse: only show metrics that need improvement
+          if (lines < 100) entry['lines%'] = lines
+          if (stmts < 100) entry['stmts%'] = stmts
+          if (branch < 100) entry['branch%'] = branch
+          if (funcs < 100) entry['funcs%'] = funcs
         }
+
         entries.push(entry)
       }
       if (entries.length > 0) result.files = entries

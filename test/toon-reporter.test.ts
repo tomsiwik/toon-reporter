@@ -145,7 +145,7 @@ describe('ToonReporter', () => {
   })
 
   describe('coverage', () => {
-    it('should hide 100% covered files in non-verbose mode', async () => {
+    it('should hide fully covered files and only show metrics that need improvement', async () => {
       const { stdout } = await runVitest({
         root: fixturesDir,
         reporters: [new ToonReporter({ color: false, verbose: false })],
