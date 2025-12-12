@@ -1,5 +1,11 @@
 # @epicat/toon-reporter
 
+## 0.0.7
+
+### Patch Changes
+
+- 3e87ddb: adds multi-project support and tweaks
+
 ## 0.0.6
 
 ### Patch Changes
