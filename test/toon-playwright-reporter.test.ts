@@ -27,7 +27,7 @@ describe('ToonPlaywrightReporter', () => {
 
       expect(output).toContain('passing: 1')
       expect(output).toContain('failing[1]{at,expected,got}:')
-      expect(output).toContain('failing.spec.ts:7')
+      expect(output).toContain('test/playwright-fixtures/failing.spec.ts:7')
       expect(output).toContain('Wrong Title')
       expect(output).toContain('Hello World')
     }, 30000)

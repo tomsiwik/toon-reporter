@@ -56,12 +56,8 @@ export class ToonPlaywrightReporter implements Reporter {
     this.suite = suite
   }
 
-  private get rootDir(): string {
-    return this.config.rootDir
-  }
-
   private formatLocation(filePath: string, line?: number, column?: number): string {
-    const relPath = relative(this.rootDir, filePath)
+    const relPath = relative(process.cwd(), filePath)
     return line ? `${relPath}:${line}:${column || 0}` : relPath
   }
 

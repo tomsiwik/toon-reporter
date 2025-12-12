@@ -1,8 +1,5 @@
 import { spawn } from 'node:child_process'
-import { dirname, resolve } from 'pathe'
-import { fileURLToPath } from 'url'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
+import { resolve } from 'pathe'
 
 export interface RunPlaywrightResult {
   stdout: string
@@ -18,7 +15,7 @@ export interface RunPlaywrightOptions {
 export async function runPlaywright(
   testFilesOrOptions: string[] | RunPlaywrightOptions = [],
 ): Promise<RunPlaywrightResult> {
-  const fixturesDir = resolve(__dirname, 'playwright-fixtures')
+  const fixturesDir = 'test/playwright-fixtures'
 
   // Support both array of files and options object
   const options: RunPlaywrightOptions = Array.isArray(testFilesOrOptions)
@@ -33,11 +30,10 @@ export async function runPlaywright(
       'test',
       '--config',
       resolve(fixturesDir, configFile),
-      ...testFiles,
+      ...testFiles.map((f) => resolve(fixturesDir, f)),
     ]
 
     const proc = spawn('npx', args, {
-      cwd: fixturesDir,
       env: {
         ...process.env,
         // Disable color for predictable output

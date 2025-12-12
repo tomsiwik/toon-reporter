@@ -109,6 +109,41 @@ describe('ToonReporter', () => {
     })
   })
 
+  describe('multiple projects', () => {
+    it('should group results by project name', async () => {
+      const projectsDir = resolve(fixturesDir, 'projects')
+      const { stdout } = await runVitest({
+        root: projectsDir,
+        reporters: [new ToonReporter({ color: false })],
+        projects: [
+          {
+            test: {
+              name: 'server',
+              root: resolve(projectsDir, 'server'),
+              include: ['**/*.test.ts'],
+            },
+          },
+          {
+            test: {
+              name: 'client',
+              root: resolve(projectsDir, 'client'),
+              include: ['**/*.test.ts'],
+            },
+          },
+        ],
+      })
+
+      // Should group by project
+      expect(stdout).toContain('server:')
+      expect(stdout).toContain('client:')
+      // Server has 1 pass, 1 fail
+      expect(stdout).toMatch(/server:[\s\S]*passing: 1/)
+      expect(stdout).toMatch(/server:[\s\S]*failing/)
+      // Client has 2 passes
+      expect(stdout).toMatch(/client:[\s\S]*passing: 2/)
+    })
+  })
+
   describe('coverage', () => {
     it('should hide 100% covered files in non-verbose mode', async () => {
       const { stdout } = await runVitest({

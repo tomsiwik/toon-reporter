@@ -84,7 +84,6 @@ interface ReportData {
 }
 
 export class ToonReporter implements Reporter {
-  start = 0
   ctx!: Vitest
   options: ToonReporterOptions
   private useColor: boolean
@@ -97,7 +96,6 @@ export class ToonReporter implements Reporter {
 
   onInit(ctx: Vitest): void {
     this.ctx = ctx
-    this.start = Date.now()
     this.coverageMap = undefined
 
     // Suppress default coverage reporters - ToonReporter handles coverage output in TOON format
@@ -225,12 +223,8 @@ export class ToonReporter implements Reporter {
     return message
   }
 
-  async onTestRunEnd(
-    testModules: ReadonlyArray<any>,
-    _unhandledErrors: ReadonlyArray<SerializedError>,
-    _reason: TestRunEndReason,
-  ): Promise<void> {
-    const files = testModules.map((m) => m.task)
+  private buildReportForModules(modules: any[]): ReportData {
+    const files = modules.map((m) => m.task)
     const tests = getTests(files)
     const rootDir = this.ctx.config.root
 
@@ -250,20 +244,16 @@ export class ToonReporter implements Reporter {
       const relPath = loc?.relPath || relative(rootDir, t.file.filepath)
       const at = this.formatLocation(relPath, loc?.line || t.location?.line, loc?.column || t.location?.column)
 
+      const hasExpectedGot = expected !== undefined && got !== undefined
+      const failureDetails = hasExpectedGot
+        ? { expected, got }
+        : { error: this.formatErrorMessage(error) }
+
       if (t.each) {
         if (!grouped.has(at)) grouped.set(at, [])
-        grouped.get(at)!.push(expected !== undefined && got !== undefined
-          ? { expected, got }
-          : { error: this.formatErrorMessage(error) })
+        grouped.get(at)!.push(failureDetails)
       } else {
-        const failure: FailureData = { at }
-        if (expected !== undefined && got !== undefined) {
-          failure.expected = expected
-          failure.got = got
-        } else if (error) {
-          failure.error = this.formatErrorMessage(error)
-        }
-        failures.push(failure)
+        failures.push({ at, ...failureDetails } as FailureData)
       }
     }
 
@@ -281,6 +271,49 @@ export class ToonReporter implements Reporter {
     if (todoTests.length > 0) report.todo = todoTests.map(mapToSkipped)
     if (skippedTests.length > 0) report.skipped = skippedTests.map(mapToSkipped)
 
+    return report
+  }
+
+  async onTestRunEnd(
+    testModules: ReadonlyArray<any>,
+    _unhandledErrors: ReadonlyArray<SerializedError>,
+    _reason: TestRunEndReason,
+  ): Promise<void> {
+    // Check for multiple projects
+    const projectNames = new Set<string>()
+    const modulesByProject = new Map<string, any[]>()
+
+    for (const m of testModules) {
+      const proj = m.project
+      const projectName = proj?.name || ''
+      projectNames.add(projectName)
+      if (!modulesByProject.has(projectName)) {
+        modulesByProject.set(projectName, [])
+      }
+      modulesByProject.get(projectName)!.push(m)
+    }
+
+    // If multiple projects, group results by project
+    if (projectNames.size > 1) {
+      const projectReports: Record<string, ReportData> = {}
+
+      for (const [projectName, modules] of modulesByProject) {
+        const report = this.buildReportForModules(modules)
+        projectReports[projectName || 'default'] = report
+      }
+
+      const coverage = this.getCoverageSummary()
+      if (coverage) {
+        // Add coverage to root level (shared across projects)
+        await this.writeReport(encode({ ...projectReports, coverage }))
+      } else {
+        await this.writeReport(encode(projectReports))
+      }
+      return
+    }
+
+    // Single project - use flat format
+    const report = this.buildReportForModules([...testModules])
     const coverage = this.getCoverageSummary()
     if (coverage) report.coverage = coverage
 
