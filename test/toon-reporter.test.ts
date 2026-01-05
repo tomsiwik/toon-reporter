@@ -190,4 +190,63 @@ describe('ToonReporter', () => {
       expect(stdout).toContain('"funcs%"')
     })
   })
+
+  describe('edge cases', () => {
+    it('should show error when no test files found', async () => {
+      const { stdout } = await runVitest({
+        root: fixturesDir,
+        reporters: [new ToonReporter({ color: false })],
+        include: ['nonexistent-file-pattern-*.test.ts'],
+      })
+
+      // Should show error without passing count
+      expect(stdout).not.toContain('passing:')
+      expect(stdout).toContain('error:')
+      expect(stdout).toContain('No test files found')
+    })
+
+    it('should add (filtered) suffix when testNamePattern is used', async () => {
+      const { stdout } = await runVitest({
+        root: fixturesDir,
+        reporters: [new ToonReporter({ color: false })],
+        include: ['all-passing.test.ts'],
+        testNamePattern: /nonexistent-test-pattern/,
+      })
+
+      // Should add (filtered) suffix to passing line
+      expect(stdout).toContain('passing: 0 (filtered)')
+      expect(stdout).toContain('skipped: 2')
+    })
+  })
+
+  describe('timing option', () => {
+    it('should show per-test timing when timing option is enabled', async () => {
+      const { stdout } = await runVitest({
+        root: fixturesDir,
+        reporters: [new ToonReporter({ color: false, timing: true })],
+        include: ['with-slow-test.test.ts'],
+      })
+
+      // Should include total duration with unit
+      expect(stdout).toMatch(/duration: \d+ms/)
+      // Should use tabular format with timing data
+      expect(stdout).toContain('passing[3]{at,name,ms}:')
+      expect(stdout).toContain('should be fast')
+      expect(stdout).toContain('should be slow')
+      expect(stdout).toContain('should also be fast')
+    })
+
+    it('should show count only when timing option is not set', async () => {
+      const { stdout } = await runVitest({
+        root: fixturesDir,
+        reporters: [new ToonReporter({ color: false })],
+        include: ['with-slow-test.test.ts'],
+      })
+
+      // Should show simple count without timing
+      expect(stdout).toContain('passing: 3')
+      expect(stdout).not.toContain('passing[')
+      expect(stdout).not.toContain('{at,name,ms}')
+    })
+  })
 })

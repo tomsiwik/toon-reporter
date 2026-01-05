@@ -21,6 +21,7 @@ const colors = {
   yellow: (s: string) => `\x1b[33m${s}\x1b[0m`,
   gray: (s: string) => `\x1b[90m${s}\x1b[0m`,
   cyan: (s: string) => `\x1b[36m${s}\x1b[0m`,
+  purple: (s: string) => `\x1b[35m${s}\x1b[0m`,
 }
 
 function shouldUseColor(option?: boolean): boolean {
@@ -32,11 +33,27 @@ function shouldUseColor(option?: boolean): boolean {
   return !!process.env.COLOR
 }
 
+function formatDuration(ms: number): string {
+  const h = Math.floor(ms / 3600000)
+  const m = Math.floor((ms % 3600000) / 60000)
+  const s = Math.floor((ms % 60000) / 1000)
+  const remaining = Math.round(ms % 1000)
+
+  const parts: string[] = []
+  if (h) parts.push(`${h}h`)
+  if (m) parts.push(`${m}m`)
+  if (s) parts.push(`${s}s`)
+  if (remaining || parts.length === 0) parts.push(`${remaining}ms`)
+  return parts.join('')
+}
+
 export interface ToonReporterOptions {
   outputFile?: string
   color?: boolean
   /** When true, shows all files and all coverage metrics. When false (default), only shows files with gaps and only metrics < 100% */
   verbose?: boolean
+  /** When true, shows per-test timing in passing[N]{at,name,ms} format */
+  timing?: boolean
   /** @internal Used for testing to capture output */
   _captureOutput?: (output: string) => void
 }
@@ -52,6 +69,12 @@ interface FailureData {
 interface SkippedData {
   at: string
   name: string
+}
+
+interface TimingData {
+  at: string
+  name: string
+  ms: number
 }
 
 interface FileCoverageEntry {
@@ -76,12 +99,15 @@ interface CoverageData {
 }
 
 interface ReportData {
-  passing: number
+  duration?: string
+  passing?: number | TimingData[]
   failing?: FailureData[]
-  todo?: SkippedData[]
-  skipped?: SkippedData[]
+  todo?: SkippedData[] | number
+  skipped?: SkippedData[] | number
+  error?: string
   coverage?: CoverageData
 }
+
 
 export class ToonReporter implements Reporter {
   ctx!: Vitest
@@ -244,7 +270,8 @@ export class ToonReporter implements Reporter {
     const rootDir = this.ctx.config.root
 
     const failedTests = tests.filter((t) => t.result?.state === 'fail')
-    const passedCount = tests.filter((t) => t.result?.state === 'pass').length
+    const passedTests = tests.filter((t) => t.result?.state === 'pass')
+    const passedCount = passedTests.length
     const skippedTests = tests.filter((t) => t.mode === 'skip')
     const todoTests = tests.filter((t) => t.mode === 'todo')
 
@@ -281,10 +308,35 @@ export class ToonReporter implements Reporter {
       name: t.name,
     })
 
-    const report: ReportData = { passing: passedCount }
+    const report: ReportData = {}
+
+    // Passing tests - with timing data if timing option is enabled
+    if (this.options.timing) {
+      // Total duration from all file modules
+      const totalDuration = files.reduce((sum, f) => sum + (f.result?.duration ?? 0), 0)
+      report.duration = formatDuration(totalDuration)
+
+      const timingData: TimingData[] = passedTests.map((t) => ({
+        at: this.formatLocation(relative(rootDir, t.file.filepath), t.location?.line, t.location?.column),
+        name: t.name,
+        ms: Math.round(t.result?.duration ?? 0),
+      }))
+      report.passing = timingData
+    } else {
+      report.passing = passedCount
+    }
+
     if (failures.length > 0) report.failing = failures
-    if (todoTests.length > 0) report.todo = todoTests.map(mapToSkipped)
-    if (skippedTests.length > 0) report.skipped = skippedTests.map(mapToSkipped)
+
+    // When nothing passed and nothing failed, use count-only format for skipped/todo
+    const nothingRan = passedCount === 0 && failedTests.length === 0
+    if (nothingRan) {
+      if (todoTests.length > 0) report.todo = todoTests.length
+      if (skippedTests.length > 0) report.skipped = skippedTests.length
+    } else {
+      if (todoTests.length > 0) report.todo = todoTests.map(mapToSkipped)
+      if (skippedTests.length > 0) report.skipped = skippedTests.map(mapToSkipped)
+    }
 
     return report
   }
@@ -294,6 +346,15 @@ export class ToonReporter implements Reporter {
     _unhandledErrors: ReadonlyArray<SerializedError>,
     _reason: TestRunEndReason,
   ): Promise<void> {
+    // Handle "no test files found" case
+    if (testModules.length === 0) {
+      const report: ReportData = {
+        error: 'No test files found',
+      }
+      await this.writeReport(encode(report))
+      return
+    }
+
     // Check for multiple projects
     const projectNames = new Set<string>()
     const modulesByProject = new Map<string, any[]>()
@@ -328,20 +389,30 @@ export class ToonReporter implements Reporter {
     }
 
     // Single project - use flat format
+    const testNamePattern = this.ctx.config.testNamePattern
     const report = this.buildReportForModules([...testModules])
     const coverage = this.getCoverageSummary()
     if (coverage) report.coverage = coverage
 
-    await this.writeReport(encode(report))
+    let output = encode(report)
+    // Add (filtered) suffix to passing line when testNamePattern is active
+    if (testNamePattern) {
+      output = output.replace(/^(passing: .+)$/m, '$1 (filtered)')
+    }
+    await this.writeReport(output)
   }
 
   private colorize(report: string): string {
     if (!this.useColor) return report
+
     return report
       .replace(/^(passing:)/m, colors.green('$1'))
+      .replace(/(\(filtered\))/g, colors.purple('$1'))
       .replace(/^(failing\[.*?\]:)/m, colors.red('$1'))
       .replace(/^(todo\[.*?\]:)/m, colors.cyan('$1'))
+      .replace(/^(todo:)/m, colors.cyan('$1'))
       .replace(/^(skipped\[.*?\]:)/m, colors.gray('$1'))
+      .replace(/^(skipped:)/m, colors.yellow('$1'))
       .replace(/at: "([^"]+)"/g, `at: "${colors.yellow('$1')}"`)
       .replace(/("at",)([^,\n]+)/g, `$1${colors.yellow('$2')}`)
   }
