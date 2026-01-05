@@ -112,6 +112,27 @@ skipped[2]{at,name}:
   "src/utils.test.ts:8:3",handles edge case
 ```
 
+### With test name filtering
+
+When using `--testNamePattern` or `-t`, results show a `(filtered)` indicator:
+
+```
+passing: 5 (filtered)
+skipped: 42
+```
+
+### With timing enabled
+
+When `timing: true` is set, shows total duration and per-test timing:
+
+```
+duration: 52ms
+passing[3]{at,name,ms}:
+  utils.test.ts,should be fast,1
+  api.test.ts,should handle requests,50
+  db.test.ts,should be slow,1
+```
+
 ### With flaky tests (Playwright)
 
 Tests that fail initially but pass on retry are reported as flaky:
@@ -160,9 +181,10 @@ With `verbose: true`, all files appear with per-file percentages:
 
 - **Green**: `passing` count
 - **Red**: `failing` header
-- **Yellow**: `flaky` header, file paths
-- **Gray**: `skipped` tests
+- **Yellow**: `flaky` header, `skipped` count, file paths
+- **Gray**: `skipped` tests (detailed list)
 - **Cyan**: `todo` tests
+- **Purple**: `(filtered)` indicator when using `testNamePattern`
 
 Colors are enabled when:
 - `COLOR` environment variable is set, OR
@@ -210,6 +232,24 @@ Include per-file coverage percentages (lines, stmts, branch, funcs) alongside un
 
 ```ts
 reporters: [new ToonReporter({ verbose: true })]
+```
+
+### `timing`
+
+Show per-test timing information and total duration. Useful for identifying slow tests.
+
+```ts
+reporters: [new ToonReporter({ timing: true })]
+```
+
+Output:
+
+```
+duration: 1m30s52ms
+passing[3]{at,name,ms}:
+  utils.test.ts,should be fast,1
+  api.test.ts,should handle requests,50
+  db.test.ts,should query slowly,90000
 ```
 
 ## Skipped/Todo Line Numbers
