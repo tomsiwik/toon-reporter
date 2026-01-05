@@ -1,5 +1,11 @@
 # @epicat/toon-reporter
 
+## 0.0.9
+
+### Patch Changes
+
+- cb40a6a: Adds timing feature (using a flag) and fixes filters on non-found test output for better error handling and feature parity with other reporters
+
 ## 0.0.8
 
 ### Patch Changes
