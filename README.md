@@ -128,9 +128,9 @@ When `timing: true` is set, shows total duration and per-test timing:
 ```
 duration: 52ms
 passing[3]{at,name,ms}:
-  utils.test.ts,should be fast,1
-  api.test.ts,should handle requests,50
-  db.test.ts,should be slow,1
+  "utils.test.ts:4:3",should be fast,1
+  "api.test.ts:12:3",should handle requests,50
+  "db.test.ts:8:3",should be slow,1
 ```
 
 ### With flaky tests (Playwright)
@@ -247,16 +247,16 @@ Output:
 ```
 duration: 1m30s52ms
 passing[3]{at,name,ms}:
-  utils.test.ts,should be fast,1
-  api.test.ts,should handle requests,50
-  db.test.ts,should query slowly,90000
+  "utils.test.ts:4:3",should be fast,1
+  "api.test.ts:12:3",should handle requests,50
+  "db.test.ts:8:3",should query slowly,90000
 ```
 
-## Skipped/Todo Line Numbers
+## Line Numbers
 
 ### Vitest
 
-To get line:column information for skipped and todo tests, enable `includeTaskLocation` in your vitest config:
+To get line:column information for passing tests (with `timing: true`), skipped, and todo tests, enable `includeTaskLocation` in your vitest config:
 
 ```ts
 // vitest.config.ts
@@ -274,7 +274,9 @@ Or via CLI:
 npx vitest run --reporter=@epicat/toon-reporter --includeTaskLocation
 ```
 
-Without this option, skipped/todo tests will only show the file path (not line:column). This is a Vitest limitation - test locations are only collected when this config is enabled before test collection.
+Without this option, passing tests (with `timing: true`), skipped, and todo tests will only show the file path (not line:column). This is a Vitest limitation - test locations are only collected when this config is enabled before test collection.
+
+**Note:** Failing tests always include line:column from the error stack trace, regardless of this setting.
 
 ### Playwright
 

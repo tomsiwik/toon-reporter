@@ -12,6 +12,8 @@ import type {
 
 export interface ToonPlaywrightReporterOptions {
   outputFile?: string
+  /** When true, shows per-test timing in passing[N]{at,name,ms} format */
+  timing?: boolean
   /** @internal Used for testing to capture output */
   _captureOutput?: (output: string) => void
 }
@@ -34,12 +36,34 @@ interface SkippedData {
   name: string
 }
 
+interface TimingData {
+  at: string
+  name: string
+  ms: number
+}
+
 interface ReportData {
-  passing: number
+  duration?: string
+  passing?: number | TimingData[]
   flaky?: FlakyData[]
   failing?: FailureData[]
   todo?: SkippedData[]
   skipped?: SkippedData[]
+  error?: string
+}
+
+function formatDuration(ms: number): string {
+  const h = Math.floor(ms / 3600000)
+  const m = Math.floor((ms % 3600000) / 60000)
+  const s = Math.floor((ms % 60000) / 1000)
+  const remaining = Math.round(ms % 1000)
+
+  const parts: string[] = []
+  if (h) parts.push(`${h}h`)
+  if (m) parts.push(`${m}m`)
+  if (s) parts.push(`${s}s`)
+  if (remaining || parts.length === 0) parts.push(`${remaining}ms`)
+  return parts.join('')
 }
 
 export class ToonPlaywrightReporter implements Reporter {
@@ -98,6 +122,13 @@ export class ToonPlaywrightReporter implements Reporter {
 
   async onEnd(result: FullResult): Promise<void> {
     const allTests = this.suite.allTests()
+
+    // Handle "no test files found" case
+    if (allTests.length === 0) {
+      const report: ReportData = { error: 'No test files found' }
+      await this.writeReport(encode(report))
+      return
+    }
 
     const passedTests: TestCase[] = []
     const failedTests: TestCase[] = []
@@ -169,13 +200,39 @@ export class ToonPlaywrightReporter implements Reporter {
       retries: test.results.length - 1,
     })
 
-    const report: ReportData = { passing: passedTests.length }
+    const mapToTiming = (test: TestCase): TimingData => {
+      const lastResult = test.results[test.results.length - 1]
+      return {
+        at: this.formatLocation(test.location.file, test.location.line, test.location.column),
+        name: test.title,
+        ms: Math.round(lastResult?.duration ?? 0),
+      }
+    }
+
+    const report: ReportData = {}
+
+    // Add duration and timing data if timing option is enabled
+    if (this.options.timing) {
+      report.duration = formatDuration(result.duration)
+      report.passing = passedTests.map(mapToTiming)
+    } else {
+      report.passing = passedTests.length
+    }
+
     if (flakyTests.length > 0) report.flaky = flakyTests.map(mapToFlaky)
     if (failures.length > 0) report.failing = failures
     if (todoTests.length > 0) report.todo = todoTests.map(mapToSkipped)
     if (skippedTests.length > 0) report.skipped = skippedTests.map(mapToSkipped)
 
-    await this.writeReport(encode(report))
+    let output = encode(report)
+
+    // Add (filtered) suffix when grep pattern is active
+    const isFiltering = !!(this.config.grep || this.config.grepInvert)
+    if (isFiltering) {
+      output = output.replace(/^(passing: .+)$/m, '$1 (filtered)')
+    }
+
+    await this.writeReport(output)
   }
 
   async writeReport(report: string): Promise<void> {
@@ -187,7 +244,7 @@ export class ToonPlaywrightReporter implements Reporter {
     const outputFile = this.options.outputFile
 
     if (outputFile) {
-      const reportFile = resolve(this.rootDir, outputFile)
+      const reportFile = resolve(this.config.rootDir, outputFile)
 
       const outputDirectory = dirname(reportFile)
       if (!existsSync(outputDirectory)) {

@@ -220,20 +220,39 @@ describe('ToonReporter', () => {
   })
 
   describe('timing option', () => {
-    it('should show per-test timing when timing option is enabled', async () => {
+    it('should show per-test timing with line numbers when includeTaskLocation is enabled', async () => {
       const { stdout } = await runVitest({
         root: fixturesDir,
         reporters: [new ToonReporter({ color: false, timing: true })],
         include: ['with-slow-test.test.ts'],
+        includeTaskLocation: true,
       })
 
       // Should include total duration with unit
       expect(stdout).toMatch(/duration: \d+ms/)
       // Should use tabular format with timing data
       expect(stdout).toContain('passing[3]{at,name,ms}:')
+      // Should include line:column in at field
+      expect(stdout).toMatch(/"with-slow-test\.test\.ts:\d+:\d+"/)
       expect(stdout).toContain('should be fast')
       expect(stdout).toContain('should be slow')
       expect(stdout).toContain('should also be fast')
+    })
+
+    it('should show timing without line numbers when includeTaskLocation is not enabled', async () => {
+      const { stdout } = await runVitest({
+        root: fixturesDir,
+        reporters: [new ToonReporter({ color: false, timing: true })],
+        include: ['with-slow-test.test.ts'],
+        // NO includeTaskLocation
+      })
+
+      // Should still show timing data
+      expect(stdout).toMatch(/duration: \d+ms/)
+      expect(stdout).toContain('passing[3]{at,name,ms}:')
+      // But without line:column (just filename)
+      expect(stdout).toContain('with-slow-test.test.ts,should be fast')
+      expect(stdout).not.toMatch(/"with-slow-test\.test\.ts:\d+:\d+"/)
     })
 
     it('should show count only when timing option is not set', async () => {
