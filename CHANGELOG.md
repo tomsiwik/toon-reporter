@@ -1,5 +1,11 @@
 # @epicat/toon-reporter
 
+## 0.0.10
+
+### Patch Changes
+
+- 2ecbb52: adds support for timing and corrected filter for playwright / adjusted docs
+
 ## 0.0.9
 
 ### Patch Changes
