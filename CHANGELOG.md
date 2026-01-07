@@ -1,5 +1,11 @@
 # @epicat/toon-reporter
 
+## 0.0.12
+
+### Patch Changes
+
+- f567689: differenciates timedout and non-run tests
+
 ## 0.0.11
 
 ### Patch Changes
