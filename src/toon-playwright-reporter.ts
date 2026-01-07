@@ -71,6 +71,7 @@ export class ToonPlaywrightReporter implements Reporter {
   private suite!: Suite
   private options: ToonPlaywrightReporterOptions
   private testsDiscovered = 0
+  private _didBegin = false
 
   constructor(options: ToonPlaywrightReporterOptions = {}) {
     this.options = options
@@ -80,6 +81,7 @@ export class ToonPlaywrightReporter implements Reporter {
     this.config = config
     this.suite = suite
     this.testsDiscovered = suite.allTests().length
+    this._didBegin = true
   }
 
   private formatLocation(filePath: string, line?: number, column?: number): string {
@@ -123,6 +125,13 @@ export class ToonPlaywrightReporter implements Reporter {
   }
 
   async onEnd(result: FullResult): Promise<void> {
+    // Handle case where onBegin was never called (early fatal error)
+    if (!this._didBegin) {
+      const report: ReportData = { error: 'Test run failed before initialization' }
+      await this.writeReport(encode(report))
+      return
+    }
+
     const allTests = this.suite.allTests()
 
     // Handle empty test results
@@ -148,10 +157,12 @@ export class ToonPlaywrightReporter implements Reporter {
     const skippedTests: TestCase[] = []
     const todoTests: TestCase[] = []
     const flakyTests: TestCase[] = []
+    let testsWithResults = 0
 
     for (const test of allTests) {
       const lastResult = test.results[test.results.length - 1]
       if (!lastResult) continue
+      testsWithResults++
 
       const status = lastResult.status
 
@@ -177,6 +188,19 @@ export class ToonPlaywrightReporter implements Reporter {
           skippedTests.push(test)
         }
       }
+    }
+
+    // Handle case where tests exist but none were executed (e.g., webServer timeout)
+    if (testsWithResults === 0) {
+      let errorMessage = `${allTests.length} test(s) discovered but not executed`
+      if (result.status === 'timedout') {
+        errorMessage += ' (timed out)'
+      } else if (result.status === 'interrupted') {
+        errorMessage += ' (interrupted)'
+      }
+      const report: ReportData = { error: errorMessage }
+      await this.writeReport(encode(report))
+      return
     }
 
     const failures: FailureData[] = []

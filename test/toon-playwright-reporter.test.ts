@@ -35,22 +35,24 @@ describe('ToonPlaywrightReporter', () => {
 
       const mockConfig = { rootDir: '.', grep: null, grepInvert: null } as any
 
-      // Mock suite with tests in onBegin
-      const mockTest = { location: { file: 'test.spec.ts', line: 5, column: 3 } }
+      // Mock test that was discovered but has no results (never ran)
+      const mockTest = {
+        location: { file: 'test.spec.ts', line: 5, column: 3 },
+        results: [], // No results - test was discovered but never executed
+        annotations: [],
+      }
       const mockSuiteWithTests = { allTests: () => [mockTest] } as any
 
       reporter.onBegin(mockConfig, mockSuiteWithTests)
-
-      // But empty suite in onEnd (tests weren't executed)
-      ;(reporter as any).suite = { allTests: () => [] }
       await reporter.onEnd({ status: 'timedout', duration: 0 } as any)
 
       expect(output).toContain('error:')
       expect(output).not.toContain('No test files found')
-      expect(output).toMatch(/discovered.*not executed|timed out|interrupted/i)
+      expect(output).toMatch(/1 test\(s\) discovered but not executed/)
+      expect(output).toContain('timed out')
     })
 
-    it('should show "interrupted" error when test run was interrupted', async () => {
+    it('should show "interrupted" error when no tests exist and run was interrupted', async () => {
       let output = ''
       const reporter = new ToonPlaywrightReporter({
         _captureOutput: (o) => { output = o },
@@ -64,6 +66,41 @@ describe('ToonPlaywrightReporter', () => {
 
       expect(output).toContain('error:')
       expect(output).toContain('interrupted')
+    })
+
+    it('should show "interrupted" error when tests exist but not executed due to interruption', async () => {
+      let output = ''
+      const reporter = new ToonPlaywrightReporter({
+        _captureOutput: (o) => { output = o },
+      })
+
+      const mockConfig = { rootDir: '.', grep: null, grepInvert: null } as any
+      const mockTest = {
+        location: { file: 'test.spec.ts', line: 5, column: 3 },
+        results: [],
+        annotations: [],
+      }
+      const mockSuite = { allTests: () => [mockTest] } as any
+
+      reporter.onBegin(mockConfig, mockSuite)
+      await reporter.onEnd({ status: 'interrupted', duration: 0 } as any)
+
+      expect(output).toContain('error:')
+      expect(output).toMatch(/1 test\(s\) discovered but not executed/)
+      expect(output).toContain('interrupted')
+    })
+
+    it('should show error when onBegin was never called (early fatal error)', async () => {
+      let output = ''
+      const reporter = new ToonPlaywrightReporter({
+        _captureOutput: (o) => { output = o },
+      })
+
+      // onBegin is NOT called - simulating early fatal error
+      await reporter.onEnd({ status: 'failed', duration: 0 } as any)
+
+      expect(output).toContain('error:')
+      expect(output).toContain('failed before initialization')
     })
   })
 
