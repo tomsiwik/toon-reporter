@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ToonPlaywrightReporter } from '../src/toon-playwright-reporter'
 import { runPlaywright } from './playwright-test-utils'
 
 // Strip ANSI color codes for easier assertions
@@ -8,6 +9,64 @@ function stripAnsi(str: string): string {
 }
 
 describe('ToonPlaywrightReporter', () => {
+  describe('error handling', () => {
+    it('should show "No test files found" when no tests exist', async () => {
+      let output = ''
+      const reporter = new ToonPlaywrightReporter({
+        _captureOutput: (o) => { output = o },
+      })
+
+      // Mock empty suite - no tests discovered
+      const mockConfig = { rootDir: '.', grep: null, grepInvert: null } as any
+      const mockSuite = { allTests: () => [] } as any
+
+      reporter.onBegin(mockConfig, mockSuite)
+      await reporter.onEnd({ status: 'passed', duration: 0 } as any)
+
+      expect(output).toContain('error:')
+      expect(output).toContain('No test files found')
+    })
+
+    it('should show descriptive error when tests discovered but not executed', async () => {
+      let output = ''
+      const reporter = new ToonPlaywrightReporter({
+        _captureOutput: (o) => { output = o },
+      })
+
+      const mockConfig = { rootDir: '.', grep: null, grepInvert: null } as any
+
+      // Mock suite with tests in onBegin
+      const mockTest = { location: { file: 'test.spec.ts', line: 5, column: 3 } }
+      const mockSuiteWithTests = { allTests: () => [mockTest] } as any
+
+      reporter.onBegin(mockConfig, mockSuiteWithTests)
+
+      // But empty suite in onEnd (tests weren't executed)
+      ;(reporter as any).suite = { allTests: () => [] }
+      await reporter.onEnd({ status: 'timedout', duration: 0 } as any)
+
+      expect(output).toContain('error:')
+      expect(output).not.toContain('No test files found')
+      expect(output).toMatch(/discovered.*not executed|timed out|interrupted/i)
+    })
+
+    it('should show "interrupted" error when test run was interrupted', async () => {
+      let output = ''
+      const reporter = new ToonPlaywrightReporter({
+        _captureOutput: (o) => { output = o },
+      })
+
+      const mockConfig = { rootDir: '.', grep: null, grepInvert: null } as any
+      const mockSuite = { allTests: () => [] } as any
+
+      reporter.onBegin(mockConfig, mockSuite)
+      await reporter.onEnd({ status: 'interrupted', duration: 0 } as any)
+
+      expect(output).toContain('error:')
+      expect(output).toContain('interrupted')
+    })
+  })
+
   describe('passing tests', () => {
     it('should output passing count when all tests pass', async () => {
       const { stdout } = await runPlaywright(['example.spec.ts'])

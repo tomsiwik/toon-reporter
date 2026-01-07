@@ -70,6 +70,7 @@ export class ToonPlaywrightReporter implements Reporter {
   private config!: FullConfig
   private suite!: Suite
   private options: ToonPlaywrightReporterOptions
+  private testsDiscovered = 0
 
   constructor(options: ToonPlaywrightReporterOptions = {}) {
     this.options = options
@@ -78,6 +79,7 @@ export class ToonPlaywrightReporter implements Reporter {
   onBegin(config: FullConfig, suite: Suite): void {
     this.config = config
     this.suite = suite
+    this.testsDiscovered = suite.allTests().length
   }
 
   private formatLocation(filePath: string, line?: number, column?: number): string {
@@ -123,9 +125,20 @@ export class ToonPlaywrightReporter implements Reporter {
   async onEnd(result: FullResult): Promise<void> {
     const allTests = this.suite.allTests()
 
-    // Handle "no test files found" case
+    // Handle empty test results
     if (allTests.length === 0) {
-      const report: ReportData = { error: 'No test files found' }
+      let errorMessage: string
+      if (this.testsDiscovered > 0) {
+        // Tests were discovered in onBegin but not present in onEnd
+        errorMessage = `${this.testsDiscovered} test(s) discovered but not executed`
+      } else if (result.status === 'interrupted') {
+        errorMessage = 'Test run was interrupted'
+      } else if (result.status === 'timedout') {
+        errorMessage = 'Test run timed out'
+      } else {
+        errorMessage = 'No test files found'
+      }
+      const report: ReportData = { error: errorMessage }
       await this.writeReport(encode(report))
       return
     }
