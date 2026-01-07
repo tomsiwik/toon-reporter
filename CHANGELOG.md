@@ -1,5 +1,11 @@
 # @epicat/toon-reporter
 
+## 0.0.11
+
+### Patch Changes
+
+- 0b7f438: no-test bug for playwright fixed
+
 ## 0.0.10
 
 ### Patch Changes
